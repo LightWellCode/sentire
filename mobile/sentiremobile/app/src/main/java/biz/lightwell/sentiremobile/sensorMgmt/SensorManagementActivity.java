@@ -207,7 +207,7 @@ public class SensorManagementActivity extends AppCompatActivity {
             switch (lState) {
                 case 0:
                     // TBD
-                    Log.i(C.LOGTAG, "Sensor MQ-2 to enable...");
+                    Log.i(C.LOGTAG, "Sensor MQ-2 to - single run...");
                     characteristic = gatt.getService(C.MQ2_SERVICE).getCharacteristic(C.MQ2_CONFIG_CHAR);
                     characteristic.setValue(new byte[] {0x01});
                     break;
@@ -240,7 +240,7 @@ public class SensorManagementActivity extends AppCompatActivity {
             Log.d(C.LOGTAG, "Connection state change: " + status + " -> " + newState);
             if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED) {
                 gatt.discoverServices();
-                mHandler.sendMessage(Message.obtain(null, C.MSG_PROGRESS, "Discovering Services..."));
+                mHandler.sendMessage(Message.obtain(null, C.MSG_CONNECTDEVICE, "Discovering Services..." + gatt.getDevice().toString()));
             } else if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_DISCONNECTED) {
                 mHandler.sendEmptyMessage(C.MSG_CLEAR);
             } else if (status != BluetoothGatt.GATT_SUCCESS) {
@@ -251,7 +251,7 @@ public class SensorManagementActivity extends AppCompatActivity {
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             Log.d(C.LOGTAG, "services discovered: " + status);
-            mHandler.sendMessage(Message.obtain(null, C.MSG_PROGRESS, "Enabling sensors..."));
+            //mHandler.sendMessage(Message.obtain(null, C.MSG_PROGRESS, "Enabling sensors..."));
             reset();
             enableNextSensor(gatt);
         }
@@ -333,10 +333,10 @@ public class SensorManagementActivity extends AppCompatActivity {
             switch (msg.what) {
                 // build up UI message handling here
                 case C.MSG_STARTSCAN:
-                    mScanStatus.setText(msg.toString());
+                    mScanStatus.setText("Scanning....");
                     break;
                 case C.MSG_STOPSCAN:
-                    mScanStatus.setText(msg.toString());
+                    mScanStatus.setText("Stopped....");
                     break;
                 case C.MSG_MQ2:
                     if (C.LOGGING) { Log.d(C.LOGTAG, "SensorManagementActivity - mHandler Data Read: MQ2 - " + msg.toString()); }
@@ -345,10 +345,14 @@ public class SensorManagementActivity extends AppCompatActivity {
                         Log.w(C.LOGTAG, "Error obtaining MQ2 value");
                         return;
                     }
-                    mSensorData.setText(characteristic.getFloatValue(BluetoothGattCharacteristic.FORMAT_SFLOAT, 0).toString());
+                    mSensorData.setText(characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 0).toString());
+
+
                     break;
-                case C.MSG_PROGRESS:
+                case C.MSG_CONNECTDEVICE:
                     mDeviceStatus.setText(msg.toString());
+                case C.MSG_PROGRESS:
+                    //mDeviceStatus.setText(msg.toString());
                     break;
                 case C.MSG_DISMISS:
                     break;

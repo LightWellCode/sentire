@@ -18,7 +18,7 @@ public final class C {
 
 
     // START BLE ------------------------------- BLE
-        public static final String DEVICE_NAME = "MQ2";
+        public static final String DEVICE_NAME = "SENTIRE";
         /* Humidity Service */
         public static final UUID HUMIDITY_SERVICE = UUID.fromString("f000aa20-0451-4000-b000-000000000000");
         public static final UUID HUMIDITY_DATA_CHAR = UUID.fromString("f000aa21-0451-4000-b000-000000000000");
