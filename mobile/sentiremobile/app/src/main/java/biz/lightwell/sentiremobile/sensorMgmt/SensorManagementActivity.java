@@ -47,7 +47,7 @@ public class SensorManagementActivity extends AppCompatActivity {
     private List<ScanFilter> mFilters;
 
     private ProgressDialog mProgress;
-    private TextView mScanStatus, mDeviceStatus, mSensorService, mSensorData;
+    private TextView mScanStatus, mDeviceStatus, mSensorData;
 
 
     // ------------------------------------------------ OVERRIDE
@@ -68,7 +68,6 @@ public class SensorManagementActivity extends AppCompatActivity {
 
         mScanStatus     = (TextView) findViewById(R.id.scanStatus);
         mDeviceStatus   = (TextView) findViewById(R.id.deviceStatus);
-        mSensorService  = (TextView) findViewById(R.id.sensorService);
         mSensorData     = (TextView) findViewById(R.id.sensorData);
     }
 
@@ -346,7 +345,7 @@ public class SensorManagementActivity extends AppCompatActivity {
                         Log.w(C.LOGTAG, "Error obtaining MQ2 value");
                         return;
                     }
-                    mSensorData.setText(characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT16, 0).toString());
+                    mSensorData.setText(characteristic.getFloatValue(BluetoothGattCharacteristic.FORMAT_SFLOAT, 0).toString());
                     break;
                 case C.MSG_PROGRESS:
                     mDeviceStatus.setText(msg.toString());
@@ -356,7 +355,6 @@ public class SensorManagementActivity extends AppCompatActivity {
                 case C.MSG_CLEAR:
                     mScanStatus.setText("TBD...");
                     mDeviceStatus.setText("TBD...");
-                    mSensorService.setText("TBD...");
                     mSensorData.setText("TBD...");
                     break;
                 default:

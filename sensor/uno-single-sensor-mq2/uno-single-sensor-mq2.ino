@@ -24,24 +24,21 @@
 #include <CurieBLE.h>
 
 // BLE
-BLEPeripheral blePeripheral;  // the board
-BLEService mq2Service("41EF6040-E249-4035-81EE-8999024D88ED");      //  gas sensor - NOTE THIS IS A RANDOM UUID - MORE RESEARCH NEEDED
-BLEIntCharacteristic mq2DataCharacteristic("41EF6041-E249-4035-81EE-8999024D88ED", BLERead);  // INCREAMENT UUID BY 1...
-BLEIntCharacteristic mq2ConfigCharacteristic("41EF6042-E249-4035-81EE-8999024D88ED", BLERead | BLEWrite);  // INCREAMENT UUID BY 1...
+BLEPeripheral          blePeripheral;  // the board
+BLEService             mq2Service("41EF6040-E249-4035-81EE-8999024D88ED");      //  gas sensor - NOTE THIS IS A RANDOM UUID - MORE RESEARCH NEEDED
+BLEFloatCharacteristic mq2DataCharacteristic("41EF6041-E249-4035-81EE-8999024D88ED", BLERead);  // INCREAMENT UUID BY 1...
+BLEIntCharacteristic   mq2ConfigCharacteristic("41EF6042-E249-4035-81EE-8999024D88ED", BLERead | BLEWrite);  // INCREAMENT UUID BY 1...
 
 // SENSORS
-const int gasPin1 = A5;
-const int heaterPin1 = 12;
-int gasVal1 = 0;
-
+const int   gasPin1 = A5;
+const int   heaterPin1 = 12;
+const float gasBaseline = 0.00;
+int   sensorValue;
+  
 const int ledPin = 13;
 long warmup = 180000;
 long downtime = 360000;
 
-// EEPROM
-int addr = 0;
-int record = 0;
-int reclen = 5;
 
 // --------------------------------------------------------- setup
 void setup() {
@@ -69,12 +66,67 @@ void setup() {
 
 // --------------------------------------------------------- loop
 void loop() {
-  int scratch=0;
- 
+  int scratch=0; 
   unsigned long counter = millis();
+    
+  // setup connection to central devices for control
+  bleCentralConnect();
+
+  // heat the sensor up
+  Serial.println("Sensor on warmup...");
   digitalWrite(heaterPin1, HIGH);
-  Serial.print("Unit active...");
+  while(millis() < (counter + warmup))
+  {
+    scratch = (int)((counter + warmup - millis())/1000);
+    Serial.print(scratch);
+    Serial.print(",");
+    delay(10000);
+  }
   
+  // get the sensor value  
+  Serial.println("Unit off...");
+  digitalWrite(heaterPin1, LOW);
+  sensorValue = analogRead(gasPin1);
+  recordData(sensorValue);  
+
+  // cool down...  
+  Serial.println("Sensor on cooldown...");
+  while(millis() < (counter + downtime)) 
+  {
+    // cool down...
+  }
+
+}
+
+
+// --------------------------------------------------------- functions
+void recordData(int v) {
+  float sensorVolt;
+  float sensorGas;
+  //float ratio;
+  
+  sensorVolt  = (float) v/1024*5.0;
+  sensorGas   = (5.0 - sensorVolt)/sensorVolt;
+  //ratio       = sensorGas / gasBaseline;
+
+  Serial.print("Time: ");
+  Serial.print(millis());
+  Serial.print("; ");
+  Serial.print("Voltage: ");
+  Serial.print(sensorVolt);
+  Serial.print("; ");
+  Serial.print("Gas: ");
+  Serial.print(sensorGas);
+  Serial.print("; ");
+  //Serial.print("Gas Ratio to Baseline: ");
+  //Serial.print(ratio);
+  //Serial.println("; ");
+  
+  mq2DataCharacteristic.setValue(sensorGas);    
+}
+
+
+void bleCentralConnect() {
   // listen for BLE peripherals to connect
   BLECentral central = blePeripheral.central();
 
@@ -91,32 +143,6 @@ void loop() {
       Serial.println("Signal not yet sent from android...");
     }
 
-  }
-  
-  while(millis() < (counter + warmup))
-  {
-    scratch = (int)((counter + warmup - millis())/1000);
-    Serial.print(scratch);
-    Serial.print(",");
-    delay(10000);
-  }
-
-  gasVal1 = analogRead(gasPin1);
-
-  digitalWrite(heaterPin1, LOW);
-  Serial.println("Unit off...");
-  Serial.print(millis());
-  Serial.print(",");
-  Serial.print("Gas1: ");
-  Serial.println(gasVal1);
-  mq2DataCharacteristic.setValue(gasVal1);
-  
-  
-  while(millis() < (counter + downtime)) 
-  {
-    // cool down...
-  }
-
-// --------------------------------------------------------- functions
-      
+  }  
 }
+

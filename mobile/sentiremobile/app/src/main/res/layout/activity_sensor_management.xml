@@ -11,26 +11,65 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/scanStatus"
-        android:text="TBD"
-        />
-    <TextView
-        android:layout_width="wrap_content"
+        android:textSize="11sp"
+        android:text="1.) Make sure that you have enabled Bluetooth
+2.) You will need to manually pair with the Sensor before the scan will detect.
+3.) Select 'SCAN' from the menu
+4.) When the device(s) running BLE are discovered they will appear in the menu
+5.) Click on the device that you want - data will begin to show below.
+"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/deviceStatus"
-        android:text="TBD"
+        android:orientation="horizontal">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:text="Scan Status: "/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:id="@+id/scanStatus"
+            android:text="TBD"
         />
-    <TextView
-        android:layout_width="wrap_content"
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/sensorService"
-        android:text="TBD"
-        />
-    <TextView
-        android:layout_width="wrap_content"
+        android:orientation="horizontal">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:text="Device Status: "/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:id="@+id/deviceStatus"
+            android:text="TBD"
+            />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/sensorData"
-        android:text="TBD"
-        />
+        android:orientation="horizontal">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:text="Sensor Value: "/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:id="@+id/sensorData"
+            android:text="TBD"
+            />
+    </LinearLayout>
+
 
 </LinearLayout>
