@@ -133,7 +133,7 @@ public class SensorManagementActivity extends AppCompatActivity {
                  */
                 mConnectedGatt = device.connectGatt(this, false, mGattCallback);
                 //Display progress UI
-                mHandler.sendMessage(Message.obtain(null, C.MSG_CONNECTDEVICE, "Connecting to "+device.getName()+"..."));
+                //mHandler.sendMessage(Message.obtain(null, C.MSG_CONNECTDEVICE, "Connecting to "+device.getName()+"..."));
                 return super.onOptionsItemSelected(item);
         }
     }
@@ -240,7 +240,7 @@ public class SensorManagementActivity extends AppCompatActivity {
             Log.d(C.LOGTAG, "Connection state change: " + status + " -> " + newState);
             if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED) {
                 gatt.discoverServices();
-                mHandler.sendMessage(Message.obtain(null, C.MSG_CONNECTDEVICE, "Discovering Services..." + gatt.getDevice().toString()));
+                mHandler.sendMessage(Message.obtain(null, C.MSG_CONNECTDEVICE, "Connecting Device..." + gatt.getDevice().getName() + " " + gatt.getDevice().toString()));
             } else if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_DISCONNECTED) {
                 mHandler.sendEmptyMessage(C.MSG_CLEAR);
             } else if (status != BluetoothGatt.GATT_SUCCESS) {
@@ -350,7 +350,7 @@ public class SensorManagementActivity extends AppCompatActivity {
 
                     break;
                 case C.MSG_CONNECTDEVICE:
-                    mDeviceStatus.setText(msg.toString());
+                    mDeviceStatus.setText(msg.obj.toString());
                 case C.MSG_PROGRESS:
                     //mDeviceStatus.setText(msg.toString());
                     break;
