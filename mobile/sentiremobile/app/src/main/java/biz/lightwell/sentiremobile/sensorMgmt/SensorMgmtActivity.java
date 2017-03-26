@@ -1,12 +1,10 @@
 package biz.lightwell.sentiremobile.sensorMgmt;
 
-import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
@@ -23,19 +21,18 @@ import android.util.Log;
 import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
-import biz.lightwell.sentiremobile.R;
 import biz.lightwell.sentiremobile.myUtil.C;
+import biz.lightwell.sentiremobile.R;
 
-
-// TODO: 3/23/2017 need to research bluetooth profiles - these are associated to the board ID and it caches the gatt attributes; profile must be removed if gatt attributes are changed...
-
-public class SensorManagementActivity extends AppCompatActivity {
+public class SensorMgmtActivity extends AppCompatActivity implements View.OnClickListener {
 
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothGatt mConnectedGatt;
@@ -46,29 +43,34 @@ public class SensorManagementActivity extends AppCompatActivity {
     private ScanSettings mSettings;
     private List<ScanFilter> mFilters;
 
-    private ProgressDialog mProgress;
-    private TextView mScanStatus, mDeviceStatus, mSensorData;
+    private Button mBtnMQ2, mBtnTemperature, mBtnMQ2Read, mBtnTemperatureRead;
+    private TextView mScanStatus, mDeviceStatus, mMQ2Status, mTemperatureStatus;
 
 
     // ------------------------------------------------ OVERRIDE
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        if (C.LOGGING) { Log.d(C.LOGTAG, "SensorManagementActivity - onCreate"); }
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_sensor_management);
+        setContentView(R.layout.activity_sensor_mgmt);
+
+        mBtnMQ2 = (Button) findViewById(R.id.btn_mq2);
+        mBtnTemperature = (Button) findViewById(R.id.btn_temperature);
+        mBtnMQ2Read = (Button) findViewById(R.id.btn_mq2Read);
+        mBtnTemperatureRead = (Button) findViewById(R.id.btn_temperatureRead);
+
+        mBtnMQ2.setOnClickListener(this);
+        mBtnTemperature.setOnClickListener(this);
+        mBtnMQ2Read.setOnClickListener(this);
+        mBtnTemperatureRead.setOnClickListener(this);
+
+        mScanStatus = (TextView) findViewById(R.id.scanStatus);
+        mDeviceStatus = (TextView) findViewById(R.id.deviceStatus);
+        mMQ2Status = (TextView) findViewById(R.id.mq2Status);
+        mTemperatureStatus = (TextView) findViewById(R.id.temperatureStatus);
 
         BluetoothManager manager = (BluetoothManager) getSystemService(BLUETOOTH_SERVICE);
         mBluetoothAdapter = manager.getAdapter();
-
         mDevices = new SparseArray<BluetoothDevice>();
-
-        mProgress = new ProgressDialog(this);
-        mProgress.setIndeterminate(true);
-        mProgress.setCancelable(false);
-
-        mScanStatus     = (TextView) findViewById(R.id.scanStatus);
-        mDeviceStatus   = (TextView) findViewById(R.id.deviceStatus);
-        mSensorData     = (TextView) findViewById(R.id.sensorData);
     }
 
     @Override
@@ -83,14 +85,13 @@ public class SensorManagementActivity extends AppCompatActivity {
         } else {
             mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
             mSettings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
-            mFilters = new ArrayList<ScanFilter>();            
+            mFilters = new ArrayList<ScanFilter>();
         }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        mProgress.dismiss();
         mHandler.removeCallbacks(mStopRunnable);
         mHandler.removeCallbacks(mStartRunnable);
         stopScan();
@@ -138,6 +139,57 @@ public class SensorManagementActivity extends AppCompatActivity {
         }
     }
 
+
+    @Override
+    public void onClick(View v) {
+        Log.i(C.LOGTAG, "SensorMgmtActivity - onClick");
+        byte[] msg = new byte[] {0x00};
+        UUID service = null;
+        UUID characteristic = null;
+        String action = "";
+
+
+        int id = v.getId();
+        Button b = (Button) findViewById(id);
+        String s = b.getText().toString().substring(0,5);
+        String e = b.getText().toString().substring(5);
+
+        if (s.equals("START")) {
+            msg = new byte[] {0x01};
+            action = "write";
+            b.setText("STOP " + e);
+        } else if (s.equals("STOP ")) {
+            msg = new byte[] {0x00};
+            action = "write";
+            b.setText("START" + e);
+        } else if (s.equals("READ ")) {
+            action = "read";
+        }
+
+        switch (id) {
+            case R.id.btn_mq2:
+                service = C.MQ2_SERVICE;
+                characteristic = C.MQ2_CONFIG_CHAR;
+                break;
+            case R.id.btn_mq2Read:
+                service = C.MQ2_SERVICE;
+                characteristic = C.MQ2_DATA_CHAR;
+                break;
+            case R.id.btn_temperature:
+                service = C.TMP_SERVICE;
+                characteristic = C.TMP_CONFIG_CHAR;
+                break;
+            case R.id.btn_temperatureRead:
+                service = C.TMP_SERVICE;
+                characteristic = C.TMP_DATA_CHAR;
+                break;
+        }
+        if (service != null) {
+            sendBLEMessage(service, characteristic, action, msg);
+        }
+
+    }
+
     // ------------------------------------------------ METHODS & BUTTON HANDLERS
     private Runnable mStopRunnable = new Runnable() {
         @Override
@@ -154,14 +206,12 @@ public class SensorManagementActivity extends AppCompatActivity {
     };
 
     private void startScan() {
-        setProgressBarIndeterminateVisibility(true);
         mHandler.postDelayed(mStopRunnable, 10000);
         mBluetoothLeScanner.startScan(mFilters, mSettings, mScanCallback);
         mHandler.sendMessage(Message.obtain(null, C.MSG_STARTSCAN, "Started Scanning..."));
     }
 
     private void stopScan() {
-        setProgressBarIndeterminateVisibility(false);
         mBluetoothLeScanner.stopScan(mScanCallback);
         mHandler.sendMessage(Message.obtain(null, C.MSG_STOPSCAN, "Stopped Scanning..."));
     }
@@ -193,47 +243,7 @@ public class SensorManagementActivity extends AppCompatActivity {
 
     };
 
-
-
-
     private BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
-
-        private int lState = 0;
-        private void reset() { lState = 0; }
-        private void advance() { lState++; }
-
-        private void enableNextSensor(BluetoothGatt gatt) {
-            BluetoothGattCharacteristic characteristic;
-            switch (lState) {
-                case 0:
-                    // TBD
-                    Log.i(C.LOGTAG, "Sensor MQ-2 to - single run...");
-                    characteristic = gatt.getService(C.MQ2_SERVICE).getCharacteristic(C.MQ2_CONFIG_CHAR);
-                    characteristic.setValue(new byte[] {0x01});
-                    break;
-                default:
-                    Log.i(C.LOGTAG, "All senors enabled...");
-                    return;
-            }
-            gatt.writeCharacteristic(characteristic);
-        }
-
-        private void readNextSensor(BluetoothGatt gatt) {
-            Log.i(C.LOGTAG, "Sensor to read...");
-            BluetoothGattCharacteristic characteristic;
-            switch (lState) {
-                case 0:
-                    Log.i(C.LOGTAG, "Reading ...");
-                    characteristic = gatt.getService(C.MQ2_SERVICE).getCharacteristic(C.MQ2_DATA_CHAR);
-                    break;
-                default:
-                    Log.i(C.LOGTAG, "All senors read...");
-                    return;
-            }
-            gatt.readCharacteristic(characteristic);
-        }
-
-        //setNotify...
 
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -249,60 +259,12 @@ public class SensorManagementActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-            Log.d(C.LOGTAG, "services discovered: " + status);
-            //mHandler.sendMessage(Message.obtain(null, C.MSG_PROGRESS, "Enabling sensors..."));
-            reset();
-            enableNextSensor(gatt);
-        }
-
-        @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             if (characteristic.getUuid().equals(C.MQ2_DATA_CHAR)) {
                 mHandler.sendMessage(Message.obtain(null, C.MSG_MQ2, characteristic));
+            } else if  (characteristic.getUuid().equals(C.TMP_DATA_CHAR)) {
+                mHandler.sendMessage(Message.obtain(null, C.MSG_TMP, characteristic));
             }
-
-            //setNotifyNextSensor(gatt);
-        }
-
-        @Override
-        public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-            //After writing the enable flag, next we read the initial value
-            readNextSensor(gatt);
-        }
-
-        @Override
-        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-            /*
-             * After notifications are enabled, all updates from the device on characteristic
-             * value changes will be posted here.  Similar to read, we hand these up to the
-             * UI thread to update the display.
-             */
-            if (C.HUMIDITY_DATA_CHAR.equals(characteristic.getUuid())) {
-                mHandler.sendMessage(Message.obtain(null, C.MSG_HUMIDITY, characteristic));
-            }
-            if (C.PRESSURE_DATA_CHAR.equals(characteristic.getUuid())) {
-                mHandler.sendMessage(Message.obtain(null, C.MSG_PRESSURE, characteristic));
-            }
-            if (C.PRESSURE_CAL_CHAR.equals(characteristic.getUuid())) {
-                mHandler.sendMessage(Message.obtain(null, C.MSG_PRESSURE_CAL, characteristic));
-            }
-            if (C.MQ2_DATA_CHAR.equals(characteristic.getUuid())) {
-                mHandler.sendMessage(Message.obtain(null, C.MSG_MQ2, characteristic));
-            }
-        }
-
-        @Override
-        public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-            //Once notifications are enabled, we move to the next sensor and start over with enable
-            advance();
-            enableNextSensor(gatt);
-        }
-
-
-        @Override
-        public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
-            Log.d(C.LOGTAG, "Remote RSSI: "+rssi);
         }
 
         private String connectionState(int status) {
@@ -319,24 +281,36 @@ public class SensorManagementActivity extends AppCompatActivity {
                     return String.valueOf(status);
             }
         }
-
-    };  
-    
+    };
 
 
 
+
+    private void sendBLEMessage(UUID service, UUID characteristic, String action, byte[] msg) {
+        Log.i(C.LOGTAG, "SensorMgmtActivity - sendBLEMessage");
+        BluetoothGattCharacteristic c;
+        c = mConnectedGatt.getService(service).getCharacteristic(characteristic);
+        if (action.equals("read")) {
+            mConnectedGatt.readCharacteristic(c);
+        } else if (action.equals("write")){
+            c.setValue(msg);
+            mConnectedGatt.writeCharacteristic(c);
+        }
+    }
 
     private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             BluetoothGattCharacteristic characteristic;
             switch (msg.what) {
-                // build up UI message handling here
                 case C.MSG_STARTSCAN:
-                    mScanStatus.setText("Scanning....");
+                    mScanStatus.setText("Scanning ...");
                     break;
                 case C.MSG_STOPSCAN:
-                    mScanStatus.setText("Stopped....");
+                    mScanStatus.setText("Stopped");
+                    break;
+                case C.MSG_CONNECTDEVICE:
+                    mDeviceStatus.setText(msg.obj.toString());
                     break;
                 case C.MSG_MQ2:
                     if (C.LOGGING) { Log.d(C.LOGTAG, "SensorManagementActivity - mHandler Data Read: MQ2 - " + msg.toString()); }
@@ -345,30 +319,35 @@ public class SensorManagementActivity extends AppCompatActivity {
                         Log.w(C.LOGTAG, "Error obtaining MQ2 value");
                         return;
                     }
-                    mSensorData.setText(characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 0).toString());
-
-
+                    mMQ2Status.setText(characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 0).toString());
                     break;
-                case C.MSG_CONNECTDEVICE:
-                    mDeviceStatus.setText(msg.obj.toString());
-                case C.MSG_PROGRESS:
-                    //mDeviceStatus.setText(msg.toString());
-                    break;
-                case C.MSG_DISMISS:
+                case C.MSG_TMP:
+                    if (C.LOGGING) { Log.d(C.LOGTAG, "SensorManagementActivity - mHandler Data Read: TEMP - " + msg.toString()); }
+                    characteristic = (BluetoothGattCharacteristic) msg.obj;
+                    if (characteristic.getValue() == null) {
+                        Log.w(C.LOGTAG, "Error obtaining TMP value");
+                        return;
+                    }
+                    int v = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT16, 0);
+                    Double voltage = (v / 1024.0) * 5.0;
+                    Double temperature = (voltage - .5) * 100;
+                    mTemperatureStatus.setText(temperature.toString());
                     break;
                 case C.MSG_CLEAR:
-                    mScanStatus.setText("TBD...");
-                    mDeviceStatus.setText("TBD...");
-                    mSensorData.setText("TBD...");
+                    mScanStatus.setText("TBD");
+                    mDeviceStatus.setText("TBD");
+                    mMQ2Status.setText("TBD");
+                    mTemperatureStatus.setText("TBD");
                     break;
                 default:
-                    if (C.LOGGING) { Log.d(C.LOGTAG, "SensorManagementActivity - mHandler: " + msg.toString()); }
+                    if (C.LOGGING) { Log.d(C.LOGTAG, "SensorMgmtActivity - mHandler: " + msg.toString()); }
             }
+        }
+
+        private void silly() {
+
         }
     };
 
-
-
     // ------------------------------------------------ PRIVATE CLASSES
-
 }

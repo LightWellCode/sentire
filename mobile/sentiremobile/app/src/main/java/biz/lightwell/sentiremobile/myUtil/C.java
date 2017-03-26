@@ -38,6 +38,10 @@ public final class C {
         public static final UUID MQ2_DATA_CHAR = UUID.fromString("41ef6041-e249-4035-81ee-8999024d88ed");
         public static final UUID MQ2_CONFIG_CHAR = UUID.fromString("41ef6042-e249-4035-81ee-8999024d88ed");
 
+    /* BOGUS TEMP sensors */
+    public static final UUID TMP_SERVICE = UUID.fromString("41ef6050-e249-4035-81ee-8999024d88ed");
+    public static final UUID TMP_DATA_CHAR = UUID.fromString("41ef6051-e249-4035-81ee-8999024d88ed");
+    public static final UUID TMP_CONFIG_CHAR = UUID.fromString("41ef6052-e249-4035-81ee-8999024d88ed");
 
         /* Internal handler messages */
         public static final int MSG_HUMIDITY = 101;
@@ -47,7 +51,8 @@ public final class C {
         public static final int MSG_DISMISS = 202;
         public static final int MSG_CLEAR = 301;
         public static final int MSG_LED = 999;
-        public static final int MSG_MQ2 = 998;
+    public static final int MSG_MQ2 = 998;
+    public static final int MSG_TMP = 997;
 
         public static final int MSG_STARTSCAN = 1;
         public static final int MSG_STOPSCAN = 2;

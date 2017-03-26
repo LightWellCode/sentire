@@ -9,7 +9,7 @@ import android.widget.Button;
 
 import biz.lightwell.sentiremobile.aaa.GoogleAuthActivity;
 import biz.lightwell.sentiremobile.myUtil.C;
-import biz.lightwell.sentiremobile.sensorMgmt.SensorManagementActivity;
+import biz.lightwell.sentiremobile.sensorMgmt.SensorMgmtActivity;
 
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener  {
@@ -49,7 +49,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     public void openSensorsActivity() {
-        Intent intent = new Intent (this, SensorManagementActivity.class);
+        Intent intent = new Intent (this, SensorMgmtActivity.class);
         startActivity(intent);
     }
 

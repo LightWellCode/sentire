@@ -34,9 +34,11 @@
             android:name="QUERY_LOG"
             android:value="false"/>
 
-        <activity android:name=".sensorMgmt.SensorManagementActivity">
+        <activity android:name=".sensorMgmt.zzzSensorManagementActivity">
         </activity>
         <activity android:name=".aaa.GoogleAuthActivity">
+        </activity>
+        <activity android:name=".sensorMgmt.SensorMgmtActivity">
         </activity>
     </application>
 
