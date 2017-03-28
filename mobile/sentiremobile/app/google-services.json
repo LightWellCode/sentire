@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "780656769771",
+    "project_id": "sentire-mobile"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:780656769771:android:3d532bd8e06f013a",
+        "android_client_info": {
+          "package_name": "biz.lightwell.sentiremobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "780656769771-225k65h2kvg4uqolkic23n24b4u3l917.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "biz.lightwell.sentiremobile",
+            "certificate_hash": "11c4c571c40018daa0f8a6572309053a9ab10040"
+          }
+        },
+        {
+          "client_id": "780656769771-ggbgt76gpfht8e0jq6mdbrhim26fha6m.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAeXw2u3Zsg5lfBPUsldvgc3bo5LtWNoQA"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 1
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

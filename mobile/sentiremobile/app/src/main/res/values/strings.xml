@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">Sentire Mobile</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="btn_logout_from_google">Logout from Google</string>
+    <string name="btn_revoke_access">Revoke Access</string>
+    <string name="btn_post_login">Post Login -></string>
+
+    <string name="loading">Loading...</string>
+    <string name="title_activity_post_login">PostLogin</string>
 </resources>
