@@ -1,12 +1,14 @@
 package biz.lightwell.sentiremobile.aaa;
 
+import com.orm.SugarRecord;
+
 /**
  * Created by stew on 3/23/2017.
  * Purpose:
  * Notes:
  */
 
-public class myInfoDataObj {
+public class myInfoDataObj extends SugarRecord {
     // organized as a key / value pairings to manage multiple devices/sensors being connected
 
     private String infoDataCat; // ANDROID | ARDUINO BOARD | PERSON

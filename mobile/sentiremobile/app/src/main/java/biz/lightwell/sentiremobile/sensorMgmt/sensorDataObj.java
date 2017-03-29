@@ -1,6 +1,10 @@
 package biz.lightwell.sentiremobile.sensorMgmt;
 
+import com.orm.SugarRecord;
+
 import java.security.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 
 /**
@@ -9,18 +13,18 @@ import java.util.Date;
  * Notes:
  */
 
-public class sensorDataObj {
+public class sensorDataObj extends SugarRecord {
 
     // TODO: 3/27/2017 pick a data storage approach for the different data types 
     private String sensorDataKey;       // MQ2 | TEMP | LAT | LONG | ALTITUDE
     private String sensorDataValue;     // hmmm....some float, integer and stings -set all to string?
     private String sensorDataType;      // store the data value type here for conversion...?
-    private Date sensorDateTime;        //
+    private Calendar sensorDateTime;        //
     private String sensorDeviceID;      // android could be connected to multiple sensor devices
 
     public sensorDataObj() {}
 
-    public sensorDataObj(String sensorDataKey, String sensorDataValue, Date sensorDateTime, String sensorDeviceID) {
+    public sensorDataObj(String sensorDataKey, String sensorDataValue, String sensorDataType, Calendar sensorDateTime, String sensorDeviceID) {
         // TODO: 3/27/2017 add data validations...
         this.sensorDataKey = sensorDataKey;
         this.sensorDataValue = sensorDataValue;
@@ -44,11 +48,25 @@ public class sensorDataObj {
         this.sensorDataValue = sensorDataValue;
     }
 
-    public Date getSensorDateTime() {
+    public String getSensorDataType() {
+        return sensorDataType;
+    }
+
+    public void setSensorDataType(String sensorDataType) {
+        this.sensorDataType = sensorDataType;
+    }
+
+    public Calendar getSensorDateTime() {
         return sensorDateTime;
     }
 
-    public void setSensorDateTime(Date sensorDateTime) {
+    public String getTime() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        Date date = sensorDateTime.getTime();
+        return dateFormat.format(date);
+    }
+
+    public void setSensorDateTime(Calendar sensorDateTime) {
         this.sensorDateTime = sensorDateTime;
     }
 

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="horizontal"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:layout_weight="1">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Time"
+        android:layout_weight="1"
+        android:padding="5sp"
+        android:id="@+id/row_sensor_date"
+        />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Data Key"
+        android:layout_weight="1"
+        android:padding="5sp"
+        android:id="@+id/row_sensor_key"
+        />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Data Value"
+        android:layout_weight="1"
+        android:padding="5sp"
+        android:id="@+id/row_sensor_value"
+        />
+
+</LinearLayout>

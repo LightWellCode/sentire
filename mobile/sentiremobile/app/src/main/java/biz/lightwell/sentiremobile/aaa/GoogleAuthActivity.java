@@ -26,7 +26,11 @@ import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Status;
 
 import biz.lightwell.sentiremobile.R;
+import biz.lightwell.sentiremobile.myUtil.C;
 import biz.lightwell.sentiremobile.sensorMgmt.SensorMgmtActivity;
+import android.provider.Settings.Secure;
+
+import java.util.ArrayList;
 
 public class GoogleAuthActivity extends AppCompatActivity implements View.OnClickListener, GoogleApiClient.OnConnectionFailedListener {
     private static final String TAG = SensorMgmtActivity.class.getSimpleName();
@@ -167,6 +171,18 @@ public class GoogleAuthActivity extends AppCompatActivity implements View.OnClic
 
             mEmail = personName;
             mLoginStatus = result.isSuccess();
+            // TODO: 3/28/2017 Save email and android phone info to myInfoDataObj
+
+            String m_androidId = Secure.getString(getContentResolver(), Secure.ANDROID_ID);
+
+            if (myInfoDataObj.count(myInfoDataObj.class) < 1) {
+                ArrayList<myInfoDataObj> myInfo = new ArrayList<myInfoDataObj>();
+                myInfo.add(new myInfoDataObj("PERSON", "PersonEmail", mEmail));
+                myInfo.add(new myInfoDataObj("ANDROID", "AndroidID", m_androidId));
+                myInfo.get(0).save();
+                myInfo.get(1).save();
+                Log.i(C.LOGTAG, myInfo.toString());
+            }
 
             updateUI(true);
         } else {
