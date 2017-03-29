@@ -2,6 +2,9 @@ package biz.lightwell.sentiremobile.sensorMgmt;
 
 import com.orm.SugarRecord;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.security.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -78,6 +81,20 @@ public class sensorDataObj extends SugarRecord {
         this.sensorDeviceID = sensorDeviceID;
     }
 
+    public JSONObject getJSON(){
+        JSONObject object = new JSONObject();
+        try {
+            object.put("sensorDataKey", this.sensorDataKey);
+            object.put("sensorDataValue", this.sensorDataValue);
+            object.put("sensorDataType", this.sensorDataType);
+            object.put("sensorDateTime", this.getTime());
+            object.put("sensorDeviceID", this.sensorDeviceID);
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return object;
+    }
 
 }
 

@@ -30,8 +30,12 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.orm.query.Select;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -52,7 +56,7 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
     private ScanSettings mSettings;
     private List<ScanFilter> mFilters;
 
-    private Button mBtnMQ2, mBtnTemperature, mBtnMQ2Read, mBtnTemperatureRead;
+    private Button mBtnMQ2, mBtnTemperature, mBtnMQ2Read, mBtnTemperatureRead, mBtnSendJSON;
     private TextView mScanStatus, mDeviceStatus, mMQ2Status, mTemperatureStatus;
     private ListView mListofSensorDataPts;
     private SensorListAdapter adapter;
@@ -68,11 +72,13 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
         mBtnTemperature = (Button) findViewById(R.id.btn_temperature);
         mBtnMQ2Read = (Button) findViewById(R.id.btn_mq2Read);
         mBtnTemperatureRead = (Button) findViewById(R.id.btn_temperatureRead);
+        mBtnSendJSON = (Button) findViewById(R.id.btn_sendJSON);
 
         mBtnMQ2.setOnClickListener(this);
         mBtnTemperature.setOnClickListener(this);
         mBtnMQ2Read.setOnClickListener(this);
         mBtnTemperatureRead.setOnClickListener(this);
+        mBtnSendJSON.setOnClickListener(this);
 
         mScanStatus = (TextView) findViewById(R.id.scanStatus);
         mDeviceStatus = (TextView) findViewById(R.id.deviceStatus);
@@ -201,6 +207,9 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
                 service = C.TMP_SERVICE;
                 characteristic = C.TMP_DATA_CHAR;
                 break;
+            case R.id.btn_sendJSON:
+                JSONArray jsonArray = getJSONArraydata();
+                Toast.makeText(getApplicationContext(), jsonArray.toString(), Toast.LENGTH_LONG).show();
         }
         if (service != null) {
             sendBLEMessage(service, characteristic, action, msg);
@@ -392,5 +401,18 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
         }
     };
 
+
+    private JSONArray getJSONArraydata() {
+        JSONArray jsonArray = new JSONArray();
+        List<sensorDataObj> listof =(List) sensorDataObj.find(sensorDataObj.class, "sensor_data_key != ?", "''");
+        if (listof.size() > 0) {
+            for (int i = 0; i < listof.size(); i++) {;
+                jsonArray.put(listof.get(i).getJSON());
+            }
+        }
+        return jsonArray;
+    }
+
     // ------------------------------------------------ PRIVATE CLASSES
+
 }
