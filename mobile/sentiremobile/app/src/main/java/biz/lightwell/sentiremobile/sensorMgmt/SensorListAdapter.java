@@ -19,8 +19,8 @@ import biz.lightwell.sentiremobile.myUtil.C;
  * Notes:
  */
 
-public class SensorListAdapter extends ArrayAdapter<sensorDataObj> {
-    public SensorListAdapter(Context context, List<sensorDataObj> sensorDataPts) {
+public class SensorListAdapter extends ArrayAdapter<SensorDataObj> {
+    public SensorListAdapter(Context context, List<SensorDataObj> sensorDataPts) {
         super(context, 0 , sensorDataPts);
     }
 
@@ -28,7 +28,7 @@ public class SensorListAdapter extends ArrayAdapter<sensorDataObj> {
     public View getView(int position, View convertView, ViewGroup parent) {
         Log.i(C.LOGTAG, "sensor list adapter - getview");
         ViewHolder viewHolder;
-        sensorDataObj sdo = getItem(position);
+        SensorDataObj sdo = getItem(position);
 
         if (convertView == null) {
             viewHolder = new ViewHolder();
@@ -54,7 +54,7 @@ public class SensorListAdapter extends ArrayAdapter<sensorDataObj> {
     // ------------------------------------------------------------------------ methods
     public void reload() {
         this.clear();
-        List<sensorDataObj> listof =(List) sensorDataObj.find(sensorDataObj.class, "sensor_data_key != ?", "''");
+        List<SensorDataObj> listof =(List) SensorDataObj.find(SensorDataObj.class, "sensor_data_key != ?", "''");
         if (listof.size() > 0) {
             this.addAll(listof);
         }

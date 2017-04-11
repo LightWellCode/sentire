@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
@@ -26,16 +27,12 @@ import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.orm.query.Select;
-
 import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -56,7 +53,7 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
     private ScanSettings mSettings;
     private List<ScanFilter> mFilters;
 
-    private Button mBtnMQ2, mBtnTemperature, mBtnMQ2Read, mBtnTemperatureRead, mBtnSendJSON;
+    private Button mBtnMQ2, mBtnTemperature, mBtnMQ2Read, mBtnTemperatureRead, mBtnSendJSONAll;
     private TextView mScanStatus, mDeviceStatus, mMQ2Status, mTemperatureStatus;
     private ListView mListofSensorDataPts;
     private SensorListAdapter adapter;
@@ -72,13 +69,13 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
         mBtnTemperature = (Button) findViewById(R.id.btn_temperature);
         mBtnMQ2Read = (Button) findViewById(R.id.btn_mq2Read);
         mBtnTemperatureRead = (Button) findViewById(R.id.btn_temperatureRead);
-        mBtnSendJSON = (Button) findViewById(R.id.btn_sendJSON);
+        mBtnSendJSONAll = (Button) findViewById(R.id.btn_sendJSONAll);
 
         mBtnMQ2.setOnClickListener(this);
         mBtnTemperature.setOnClickListener(this);
         mBtnMQ2Read.setOnClickListener(this);
         mBtnTemperatureRead.setOnClickListener(this);
-        mBtnSendJSON.setOnClickListener(this);
+        mBtnSendJSONAll.setOnClickListener(this);
 
         mScanStatus = (TextView) findViewById(R.id.scanStatus);
         mDeviceStatus = (TextView) findViewById(R.id.deviceStatus);
@@ -89,7 +86,7 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
         mBluetoothAdapter = manager.getAdapter();
         mDevices = new SparseArray<BluetoothDevice>();
 
-        List<sensorDataObj> mListofSensorDataPts = (List) sensorDataObj.find(sensorDataObj.class,"sensor_data_key != ?", "''");
+        List<SensorDataObj> mListofSensorDataPts = (List) SensorDataObj.find(SensorDataObj.class,"sensor_data_key != ?", "''");
         adapter = new SensorListAdapter(this, mListofSensorDataPts);
         ListView listView = (ListView) findViewById(R.id.sensorDataList);
         listView.setAdapter(adapter);
@@ -177,9 +174,10 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
         Button b = (Button) findViewById(id);
         String s = b.getText().toString().substring(0,5);
         String e = b.getText().toString().substring(5);
+        JSONArray jsonArray;
 
         if (s.equals("START")) {
-            msg = new byte[] {0x01};
+            msg = new byte[] {0x02};
             action = "write";
             b.setText("STOP " + e);
         } else if (s.equals("STOP ")) {
@@ -207,8 +205,12 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
                 service = C.TMP_SERVICE;
                 characteristic = C.TMP_DATA_CHAR;
                 break;
-            case R.id.btn_sendJSON:
-                JSONArray jsonArray = getJSONArraydata();
+            case R.id.btn_sendJSONUpdate:
+                jsonArray = getJSONArraydata("update");
+                // TODO: 4/2/2017 update json sent date
+                Toast.makeText(getApplicationContext(), jsonArray.toString(), Toast.LENGTH_LONG).show();
+            case R.id.btn_sendJSONAll:
+                jsonArray = getJSONArraydata("all");
                 Toast.makeText(getApplicationContext(), jsonArray.toString(), Toast.LENGTH_LONG).show();
         }
         if (service != null) {
@@ -293,6 +295,15 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
             }
         }
 
+        @Override
+        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+            if (characteristic.getUuid().equals(C.MQ2_DATA_CHAR)) {
+                mHandler.sendMessage(Message.obtain(null, C.MSG_MQ2, characteristic));
+            } else if  (characteristic.getUuid().equals(C.TMP_DATA_CHAR)) {
+                mHandler.sendMessage(Message.obtain(null, C.MSG_TMP, characteristic));
+            }
+        }
+
         private String connectionState(int status) {
             switch (status) {
                 case BluetoothProfile.STATE_CONNECTED:
@@ -318,6 +329,13 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
         } else if (action.equals("write")){
             c.setValue(msg);
             mConnectedGatt.writeCharacteristic(c);
+            if (msg.equals(new byte[]{0x00})) {
+                mConnectedGatt.setCharacteristicNotification(c, false);
+            } else if (msg.equals(new byte[]{0x01})) {
+                mConnectedGatt.setCharacteristicNotification(c, true);
+            } else if (msg.equals(new byte[]{0x02})) {
+                mConnectedGatt.setCharacteristicNotification(c, true);
+            }
         }
     }
 
@@ -334,6 +352,10 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
                     break;
                 case C.MSG_CONNECTDEVICE:
                     mDeviceStatus.setText(msg.obj.toString());
+                    mBtnMQ2.setVisibility(View.VISIBLE);
+                    mBtnMQ2Read.setVisibility(View.VISIBLE);
+                    mBtnTemperature.setVisibility(View.VISIBLE);
+                    mBtnTemperatureRead.setVisibility(View.VISIBLE);
                     break;
                 case C.MSG_MQ2:
                     if (C.LOGGING) { Log.d(C.LOGTAG, "SensorManagementActivity - mHandler Data Read: MQ2 - " + msg.toString()); }
@@ -343,8 +365,8 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
                         return;
                     }
                     mMQ2Status.setText(characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 0).toString());
-                    saveData("MQ2", characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 0).toString(), "Int");
                     getLatLong();
+                    saveData("MQ2", characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 0).toString(), "Int");
                     break;
                 case C.MSG_TMP:
                     if (C.LOGGING) { Log.d(C.LOGTAG, "SensorManagementActivity - mHandler Data Read: TEMP - " + msg.toString()); }
@@ -357,14 +379,18 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
                     Double voltage = (v / 1024.0) * 5.0;
                     Double temperature = (voltage - .5) * 100;
                     mTemperatureStatus.setText(temperature.toString());
-                    saveData("TEMP", temperature.toString(), "Double");
                     getLatLong();
+                    saveData("TEMP", temperature.toString(), "Double");
                     break;
                 case C.MSG_CLEAR:
                     mScanStatus.setText("TBD");
                     mDeviceStatus.setText("TBD");
                     mMQ2Status.setText("TBD");
                     mTemperatureStatus.setText("TBD");
+                    mBtnMQ2.setVisibility(View.INVISIBLE);
+                    mBtnMQ2Read.setVisibility(View.INVISIBLE);
+                    mBtnTemperature.setVisibility(View.INVISIBLE);
+                    mBtnTemperatureRead.setVisibility(View.INVISIBLE);
                     break;
                 default:
                     if (C.LOGGING) { Log.d(C.LOGTAG, "SensorMgmtActivity - mHandler: " + msg.toString()); }
@@ -372,18 +398,16 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
         }
 
         private void saveData(String dataKey, String dataValue, String dataType) {
-            ArrayList<sensorDataObj> listofSensorDataPts;
+            ArrayList<SensorDataObj> listofSensorDataPts;
 
             Calendar c = Calendar.getInstance();
             // TODO: 3/28/2017 replace with call from database
             String m_androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
 
-            sensorDataObj sensorData = new sensorDataObj(dataKey, dataValue, dataType, c, m_androidId);
+            SensorDataObj sensorData = new SensorDataObj(dataKey, dataValue, dataType, c, m_androidId);
             sensorData.save();
 
             adapter.reload();
-
-
 
         }
 
@@ -402,12 +426,22 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
     };
 
 
-    private JSONArray getJSONArraydata() {
+    private JSONArray getJSONArraydata(String action) {
         JSONArray jsonArray = new JSONArray();
-        List<sensorDataObj> listof =(List) sensorDataObj.find(sensorDataObj.class, "sensor_data_key != ?", "''");
-        if (listof.size() > 0) {
-            for (int i = 0; i < listof.size(); i++) {;
-                jsonArray.put(listof.get(i).getJSON());
+        if (action.equals("all")) {
+            List<SensorDataObj> listof =(List) SensorDataObj.find(SensorDataObj.class, "sensor_data_key != ?", "''");
+            if (listof.size() > 0) {
+                for (int i = 0; i < listof.size(); i++) {;
+                    jsonArray.put(listof.get(i).getJSON());
+                }
+            }
+        } else {
+            // TODO: 4/2/2017 get datetime of last json sent
+            List<SensorDataObj> listof =(List) SensorDataObj.find(SensorDataObj.class, "sensor_date_time > ?", "''");
+            if (listof.size() > 0) {
+                for (int i = 0; i < listof.size(); i++) {;
+                    jsonArray.put(listof.get(i).getJSON());
+                }
             }
         }
         return jsonArray;

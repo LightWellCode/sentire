@@ -11,7 +11,7 @@ BLEService             tmpService("41EF6050-E249-4035-81EE-8999024D88ED");      
 BLEIntCharacteristic   tmpDataCharacteristic("41EF6051-E249-4035-81EE-8999024D88ED",   BLERead | BLENotify);  // INCREAMENT UUID BY 1...
 BLEIntCharacteristic   tmpConfigCharacteristic("41EF6052-E249-4035-81EE-8999024D88ED", BLERead | BLEWrite);  // INCREAMENT UUID BY 1...
 
-/* mq2Config: 
+/* sensor Config values (MQ2 and TEMP): 
 *  0 = sensor is offf
 *  1 = turn the sensor on for data collection
 *  2 = set the sensor to loop
@@ -23,16 +23,16 @@ BLEIntCharacteristic   tmpConfigCharacteristic("41EF6052-E249-4035-81EE-8999024D
 
 
 // MQ2 SENSOR
-const int  MQ2DATAPIN = A5;
-const int  MQ2HEATERPIN = 12;
-const long MQ2WARMUP = 180;
-const long MQ2COOLDN = 360000;
+const int  MQ2DATAPIN     = A5;
+const int  MQ2HEATERPIN   = 12;
+const long MQ2WARMUP      = 180000;
+const long MQ2COOLDN      = 360000;
       int  mq2SensorValue = 0;
       int  mq2SensorValueOld = 0;
 
 // TEMPERATURE SENSOR
-const int  TMPDATAPIN = A0;
-      int  tmpSensorValue = 0;
+const int  TMPDATAPIN        = A0;
+      int  tmpSensorValue    = 0;
       int  tmpSensorValueOld = 0;
       
 // --------------------------------------------------------------------------------- SETUP
@@ -68,7 +68,7 @@ void setup() {
   mq2DataCharacteristic.setValue(0);
   mq2ConfigCharacteristic.setValue(0);  // start with sensor OFF
   tmpDataCharacteristic.setValue(0);
-  tmpConfigCharacteristic.setValue(2);  // start with sensor ON
+  tmpConfigCharacteristic.setValue(0);  // start with sensor OFF
 
   // start ble
   blePeripheral.begin();
@@ -111,6 +111,7 @@ void mq2ConfigCharWritten(BLECentral& central, BLECharacteristic& characteristic
   }
 }
 
+
 // -------------------------------------------------------------------------------- MQ2 START
 void startMQ2Sensor(){
   int scratch = 0;
@@ -123,7 +124,7 @@ void startMQ2Sensor(){
     temporary = analogRead(MQ2DATAPIN);
     Serial.print("Time: ");
     Serial.print(millis());
-    Serial.print(", mq2 value: ");
+    Serial.print(", mq2 temporary value: ");
     Serial.println(temporary);
     delay(10000);
   }
@@ -153,9 +154,10 @@ void tmpConfigCharWritten(BLECentral& central, BLECharacteristic& characteristic
     stopTMPSensor();
   } else if (tmpConfigCharacteristic.value() == 1) {
     startTMPSensor();
-    //tmpConfigCharacteristic.setValue(0);
+    runTMPSensor();     // run the sensor one time immediately before the control variable is reset to 0
+    tmpConfigCharacteristic.setValue(0);
   } else if (tmpConfigCharacteristic.value() == 2) {
-    // tbd - set up for looping    
+    startTMPSensor();    
   }
 }
 
@@ -190,7 +192,6 @@ void runTMPSensor() {
         tmpDataCharacteristic.setValue(tmpSensorValue); 
       } 
       Serial.println(tmpDataCharacteristic.value()); 
-      
   }   
 }
 

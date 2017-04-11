@@ -31,6 +31,9 @@
             android:name="DATABASE"
             android:value="lightWellSantire.db"/>
         <meta-data
+            android:name="VERSION"
+            android:value="2"/>
+        <meta-data
             android:name="QUERY_LOG"
             android:value="false"/>
 
@@ -39,6 +42,8 @@
         <activity android:name=".aaa.GoogleAuthActivity">
         </activity>
         <activity android:name=".sensorMgmt.SensorMgmtActivity">
+        </activity>
+        <activity android:name=".aaa.ConfigOptionsActivity">
         </activity>
     </application>
 
