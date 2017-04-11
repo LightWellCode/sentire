@@ -215,6 +215,9 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
         }
         if (service != null) {
             sendBLEMessage(service, characteristic, action, msg);
+            if (action.equals("write")) {
+                sendBLEMessage(C.TMP_SERVICE, C.TMP_DATA_CHAR, action, msg);
+            }
         }
 
     }
@@ -321,6 +324,11 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
     };
 
     private void sendBLEMessage(UUID service, UUID characteristic, String action, byte[] msg) {
+        byte STOP   = (byte) 0x00;
+        byte SINGLE = (byte) 0x01;
+        byte LOOP   = (byte) 0x02;
+
+
         Log.i(C.LOGTAG, "SensorMgmtActivity - sendBLEMessage");
         BluetoothGattCharacteristic c;
         c = mConnectedGatt.getService(service).getCharacteristic(characteristic);
@@ -329,11 +337,11 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
         } else if (action.equals("write")){
             c.setValue(msg);
             mConnectedGatt.writeCharacteristic(c);
-            if (msg.equals(new byte[]{0x00})) {
+            if (msg[0] == STOP) {
                 mConnectedGatt.setCharacteristicNotification(c, false);
-            } else if (msg.equals(new byte[]{0x01})) {
+            } else if (msg[0] == SINGLE) {
                 mConnectedGatt.setCharacteristicNotification(c, true);
-            } else if (msg.equals(new byte[]{0x02})) {
+            } else if (msg[0] == LOOP) {
                 mConnectedGatt.setCharacteristicNotification(c, true);
             }
         }

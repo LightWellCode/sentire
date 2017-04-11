@@ -1,7 +1,6 @@
-#include <stdlib.h>
 #include <CurieBLE.h>
+#include <stdlib.h>
 
-BLEPeripheral          blePeripheral;  // the board
 
 BLEService             mq2Service("41EF6040-E249-4035-81EE-8999024D88ED");      //  gas sensor - NOTE THIS IS A RANDOM UUID - MORE RESEARCH NEEDED
 BLEIntCharacteristic   mq2DataCharacteristic("41EF6041-E249-4035-81EE-8999024D88ED",   BLERead | BLENotify);  // INCREAMENT UUID BY 1...
@@ -43,24 +42,27 @@ void setup() {
 
   pinMode(MQ2HEATERPIN, OUTPUT);
 
-    // advertise the board on bluetooth
-  blePeripheral.setLocalName("SENTIRE");
+  // begin inititalization
+  BLE.begin();
+  
+  // advertise the board on bluetooth
+  BLE.setLocalName("SENTIRE");
   
   // add service and charactersitic - MQ2
-  blePeripheral.setAdvertisedServiceUuid(mq2Service.uuid());
-  blePeripheral.addAttribute(mq2Service);
-  blePeripheral.addAttribute(mq2DataCharacteristic);
-  blePeripheral.addAttribute(mq2ConfigCharacteristic);  
+  BLE.setAdvertisedService(mq2Service);
+  mq2Service.addCharacteristic(mq2DataCharacteristic);
+  mq2Service.addCharacteristic(mq2ConfigCharacteristic); 
+  BLE.addService(mq2Service); 
 
   // add service and charactersitic - TEMPERATURE
-  blePeripheral.setAdvertisedServiceUuid(tmpService.uuid());
-  blePeripheral.addAttribute(tmpService);
-  blePeripheral.addAttribute(tmpDataCharacteristic);
-  blePeripheral.addAttribute(tmpConfigCharacteristic);
+  BLE.setAdvertisedService(tmpService);
+  tmpService.addCharacteristic(tmpDataCharacteristic);
+  tmpService.addCharacteristic(tmpConfigCharacteristic);
+  BLE.addService(tmpService); 
 
   // set event handlers and start BLE
-  blePeripheral.setEventHandler(BLEConnected,blePeripheralConnectHandler);
-  blePeripheral.setEventHandler(BLEDisconnected,blePeripheralDisconnectHandler);
+  BLE.setEventHandler(BLEConnected, BLEConnectHandler);
+  BLE.setEventHandler(BLEDisconnected, BLEDisconnectHandler);
   mq2ConfigCharacteristic.setEventHandler(BLEWritten, mq2ConfigCharWritten);
   tmpConfigCharacteristic.setEventHandler(BLEWritten, tmpConfigCharWritten);
 
@@ -71,13 +73,13 @@ void setup() {
   tmpConfigCharacteristic.setValue(0);  // start with sensor OFF
 
   // start ble
-  blePeripheral.begin();
+  BLE.advertise();
   Serial.println("End Setup...");
 }
 
 // --------------------------------------------------------------------------------- LOOP
 void loop() {
-  blePeripheral.poll();
+  BLE.poll();
 
   //bit odd way to handle the displaying of temperature data:
   runTMPSensor();
@@ -86,28 +88,28 @@ void loop() {
 }
 
 // --------------------------------------------------------------------------------- CENTRAL CONNECT
-void blePeripheralConnectHandler(BLECentral& central) {
+void BLEConnectHandler(BLEDevice central) {
   // central connected event handler
   Serial.print("Connected event, central: ");
   Serial.println(central.address());
 }
 
 // --------------------------------------------------------------------------------- CENTRAL DISCONNECT
-void blePeripheralDisconnectHandler(BLECentral& central) {
+void BLEDisconnectHandler(BLEDevice central) {
   // central disconnected event handler
   Serial.print("Disconnected event, central: ");
   Serial.println(central.address());
 }
 
 // --------------------------------------------------------------------------------- MQ2 DATA UPDATE
-void mq2ConfigCharWritten(BLECentral& central, BLECharacteristic& characteristic) {
+void mq2ConfigCharWritten(BLEDevice central, BLECharacteristic characteristic) {
   if (mq2ConfigCharacteristic.value() == 0) {
     stopMQ2Sensor();
   } else if (mq2ConfigCharacteristic.value() == 1) {
     startMQ2Sensor();
     mq2ConfigCharacteristic.setValue(0);
   } else if (mq2ConfigCharacteristic.value() == 2) {
-    // tbd - set up for looping    
+    startMQ2Sensor(); 
   }
 }
 
@@ -149,7 +151,7 @@ void stopMQ2Sensor(){
 }
 
 // --------------------------------------------------------------------------------- TMP DATA UPDATE
-void tmpConfigCharWritten(BLECentral& central, BLECharacteristic& characteristic) {
+void tmpConfigCharWritten(BLEDevice central, BLECharacteristic characteristic) {
   if (tmpConfigCharacteristic.value() == 0) {
     stopTMPSensor();
   } else if (tmpConfigCharacteristic.value() == 1) {
