@@ -16,7 +16,7 @@ import java.util.Date;
  * Notes:
  */
 
-public class sensorDataObj extends SugarRecord {
+public class SensorDataObj extends SugarRecord {
 
     // TODO: 3/27/2017 pick a data storage approach for the different data types 
     private String sensorDataKey;       // MQ2 | TEMP | LAT | LONG | ALTITUDE
@@ -25,12 +25,13 @@ public class sensorDataObj extends SugarRecord {
     private Calendar sensorDateTime;        //
     private String sensorDeviceID;      // android could be connected to multiple sensor devices
 
-    public sensorDataObj() {}
+    public SensorDataObj() {}
 
-    public sensorDataObj(String sensorDataKey, String sensorDataValue, String sensorDataType, Calendar sensorDateTime, String sensorDeviceID) {
+    public SensorDataObj(String sensorDataKey, String sensorDataValue, String sensorDataType, Calendar sensorDateTime, String sensorDeviceID) {
         // TODO: 3/27/2017 add data validations...
         this.sensorDataKey = sensorDataKey;
         this.sensorDataValue = sensorDataValue;
+        this.sensorDataType = sensorDataType;
         this.sensorDateTime = sensorDateTime;
         this.sensorDeviceID = sensorDeviceID;
     }
@@ -95,6 +96,8 @@ public class sensorDataObj extends SugarRecord {
         }
         return object;
     }
+
+
 
 }
 
