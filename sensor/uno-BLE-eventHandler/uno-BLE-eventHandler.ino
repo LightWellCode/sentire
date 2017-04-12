@@ -1,6 +1,8 @@
+
 #include <CurieBLE.h>
 #include <stdlib.h>
-
+#include <SPI.h>
+#include <SD.h>
 
 BLEService             mq2Service("41EF6040-E249-4035-81EE-8999024D88ED");      //  gas sensor - NOTE THIS IS A RANDOM UUID - MORE RESEARCH NEEDED
 BLEIntCharacteristic   mq2DataCharacteristic("41EF6041-E249-4035-81EE-8999024D88ED",   BLERead | BLENotify);  // INCREAMENT UUID BY 1...
@@ -10,6 +12,14 @@ BLEService             tmpService("41EF6050-E249-4035-81EE-8999024D88ED");      
 BLEIntCharacteristic   tmpDataCharacteristic("41EF6051-E249-4035-81EE-8999024D88ED",   BLERead | BLENotify);  // INCREAMENT UUID BY 1...
 BLEIntCharacteristic   tmpConfigCharacteristic("41EF6052-E249-4035-81EE-8999024D88ED", BLERead | BLEWrite);  // INCREAMENT UUID BY 1...
 
+/*
+* SD card attached to SPI bus as follows:
+** MOSI - pin 11
+** MISO - pin 12
+** CLK - pin 13
+** CS - pin 4 (for MKRZero SD: SDCARD_SS_PIN)
+*/
+ 
 /* sensor Config values (MQ2 and TEMP): 
 *  0 = sensor is offf
 *  1 = turn the sensor on for data collection
@@ -23,7 +33,7 @@ BLEIntCharacteristic   tmpConfigCharacteristic("41EF6052-E249-4035-81EE-8999024D
 
 // MQ2 SENSOR
 const int  MQ2DATAPIN     = A5;
-const int  MQ2HEATERPIN   = 12;
+const int  MQ2HEATERPIN   = 7;
 const long MQ2WARMUP      = 180000;
 const long MQ2COOLDN      = 360000;
       int  mq2SensorValue = 0;
@@ -33,12 +43,21 @@ const long MQ2COOLDN      = 360000;
 const int  TMPDATAPIN        = A0;
       int  tmpSensorValue    = 0;
       int  tmpSensorValueOld = 0;
+
+// SD CARD
+const int chipSelect = 4;
+      Sd2Card   card;
+      SdVolume  volume;
+      SdFile    root;
+      File      dataFile;
       
 // --------------------------------------------------------------------------------- SETUP
 void setup() {
   Serial.begin(9600);
   delay(9000);  // time to connect everything for the testing
   Serial.println("Begin Setup...");
+
+  initSDCard();
 
   pinMode(MQ2HEATERPIN, OUTPUT);
 
@@ -85,6 +104,37 @@ void loop() {
   runTMPSensor();
   delay(1000);
   
+}
+
+// --------------------------------------------------------------------------------- INIT SD CARD
+void initSDCard() {
+  Serial.print("\nInitializing SD Card...");
+    
+  // we'll use the initialization code from the utility libraries
+  // since we're just testing if the card is working!
+  // see if the card is present and can be initialized:
+  if (!SD.begin(chipSelect)) {
+    Serial.println("Card failed, or not present");
+    // don't do anything more:
+    return;
+  }
+  Serial.println("card initialized.");  
+}
+
+// --------------------------------------------------------------------------------- WRITE DATALOG
+void writeDataLog(String msg) {
+  dataFile = SD.open("datalog.txt", FILE_WRITE);
+  // if the file is available, write to it:
+  if (dataFile) {
+    dataFile.println(msg);
+    dataFile.close();
+    // print to the serial port too:
+    Serial.println(msg);
+  }
+  // if the file isn't open, pop up an error:
+  else {
+    Serial.println("error opening datalog.txt");
+  }  
 }
 
 // --------------------------------------------------------------------------------- CENTRAL CONNECT
@@ -176,24 +226,31 @@ void startTMPSensor(){
 }
 
 void runTMPSensor() {
+  String msg;
+  unsigned long counter = millis();
+  
   if (tmpConfigCharacteristic.value() > 0) {
       tmpSensorValue = analogRead(TMPDATAPIN);
-      Serial.print("temperature sensor value: ");
-      Serial.print(tmpSensorValue);
+      msg = "Millis: ";
+      msg += counter;
+      
+      msg += ", temperature sensor value: ";
+      msg += tmpSensorValue;
     
       float voltage = (tmpSensorValue / 1024.0) * 5.0;
-      Serial.print(", Volts: ");
-      Serial.print(voltage);
-      Serial.print(", degrees F: ");
+      msg += ", Volts: ";
+      msg += voltage;
+      msg += ", degrees F: ";
       float temperature = (voltage - .5) * 100;
-      Serial.print(temperature);
-      Serial.print(", dc: ");
+      msg += temperature;
+      msg += ", dc: ";
 
       if (tmpSensorValue != tmpSensorValueOld){
         tmpSensorValueOld = tmpSensorValue;
         tmpDataCharacteristic.setValue(tmpSensorValue); 
       } 
-      Serial.println(tmpDataCharacteristic.value()); 
+      msg += tmpDataCharacteristic.value();
+      writeDataLog(msg); 
   }   
 }
 
