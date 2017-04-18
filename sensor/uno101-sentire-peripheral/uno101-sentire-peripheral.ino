@@ -1,8 +1,4 @@
-
 #include <CurieBLE.h>
-#include <stdlib.h>
-#include <SPI.h>
-#include <SD.h>
 
 BLEService             mq2Service("41EF6040-E249-4035-81EE-8999024D88ED");      //  gas sensor - NOTE THIS IS A RANDOM UUID - MORE RESEARCH NEEDED
 BLEIntCharacteristic   mq2DataCharacteristic("41EF6041-E249-4035-81EE-8999024D88ED",   BLERead | BLENotify);  // INCREAMENT UUID BY 1...
@@ -12,24 +8,11 @@ BLEService             tmpService("41EF6050-E249-4035-81EE-8999024D88ED");      
 BLEIntCharacteristic   tmpDataCharacteristic("41EF6051-E249-4035-81EE-8999024D88ED",   BLERead | BLENotify);  // INCREAMENT UUID BY 1...
 BLEIntCharacteristic   tmpConfigCharacteristic("41EF6052-E249-4035-81EE-8999024D88ED", BLERead | BLEWrite);  // INCREAMENT UUID BY 1...
 
-/*
-* SD card attached to SPI bus as follows:
-** MOSI - pin 11
-** MISO - pin 12
-** CLK - pin 13
-** CS - pin 4 (for MKRZero SD: SDCARD_SS_PIN)
-*/
- 
 /* sensor Config values (MQ2 and TEMP): 
 *  0 = sensor is offf
 *  1 = turn the sensor on for data collection
 *  2 = set the sensor to loop
  */
-
-/* mq2Data:
-*  I am tottally stumped here - I can't seem to pass FLOAT variables up to android...
-*/
-
 
 // MQ2 SENSOR
 const int  MQ2DATAPIN     = A5;
@@ -44,22 +27,11 @@ const int  TMPDATAPIN        = A0;
       int  tmpSensorValue    = 0;
       int  tmpSensorValueOld = 0;
 
-// SD CARD
-const int chipSelect = 4;
-      Sd2Card   card;
-      SdVolume  volume;
-      SdFile    root;
-      File      dataFile;
-      
-// --------------------------------------------------------------------------------- SETUP
+
 void setup() {
   Serial.begin(9600);
   delay(9000);  // time to connect everything for the testing
   Serial.println("Begin Setup...");
-
-  initSDCard();
-
-  pinMode(MQ2HEATERPIN, OUTPUT);
 
   // begin inititalization
   BLE.begin();
@@ -94,6 +66,7 @@ void setup() {
   // start ble
   BLE.advertise();
   Serial.println("End Setup...");
+
 }
 
 // --------------------------------------------------------------------------------- LOOP
@@ -103,38 +76,7 @@ void loop() {
   //bit odd way to handle the displaying of temperature data:
   runTMPSensor();
   delay(10000);
-  
-}
 
-// --------------------------------------------------------------------------------- INIT SD CARD
-void initSDCard() {
-  Serial.print("\nInitializing SD Card...");
-    
-  // we'll use the initialization code from the utility libraries
-  // since we're just testing if the card is working!
-  // see if the card is present and can be initialized:
-  if (!SD.begin(chipSelect)) {
-    Serial.println("Card failed, or not present");
-    // don't do anything more:
-    return;
-  }
-  Serial.println("card initialized.");  
-}
-
-// --------------------------------------------------------------------------------- WRITE DATALOG
-void writeDataLog(String msg) {
-  dataFile = SD.open("datalog.txt", FILE_WRITE);
-  // if the file is available, write to it:
-  if (dataFile) {
-    dataFile.println(msg);
-    dataFile.close();
-    // print to the serial port too:
-    Serial.println(msg);
-  }
-  // if the file isn't open, pop up an error:
-  else {
-    Serial.println("error opening datalog.txt");
-  }  
 }
 
 // --------------------------------------------------------------------------------- CENTRAL CONNECT
@@ -202,6 +144,7 @@ void stopMQ2Sensor(){
 
 // --------------------------------------------------------------------------------- TMP DATA UPDATE
 void tmpConfigCharWritten(BLEDevice central, BLECharacteristic characteristic) {
+  Serial.println("temperature config char written");
   if (tmpConfigCharacteristic.value() == 0) {
     stopTMPSensor();
   } else if (tmpConfigCharacteristic.value() == 1) {
@@ -229,7 +172,7 @@ void runTMPSensor() {
   String msg;
   unsigned long counter = millis();
   
-  if (tmpConfigCharacteristic.value() > 0) {
+  if (tmpConfigCharacteristic.intValue() > 0) {
       tmpSensorValue = analogRead(TMPDATAPIN);
       msg = "Millis: ";
       msg += counter;
@@ -250,7 +193,10 @@ void runTMPSensor() {
         tmpDataCharacteristic.setValue(tmpSensorValue); 
       } 
       msg += tmpDataCharacteristic.value();
-      writeDataLog(msg); 
-  }   
+      Serial.println(msg);
+  } else {
+    Serial.println("hmmmm problem: ");
+  }
 }
+
 

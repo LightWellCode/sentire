@@ -1,5 +1,6 @@
 package biz.lightwell.sentiremobile.sensorMgmt;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
@@ -15,6 +16,7 @@ import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Handler;
@@ -215,8 +217,35 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
         }
         if (service != null) {
             sendBLEMessage(service, characteristic, action, msg);
-            if (action.equals("write")) {
-                sendBLEMessage(C.TMP_SERVICE, C.TMP_DATA_CHAR, action, msg);
+            if (action.equals("write") && s.equals("START") && id == R.id.btn_temperature) {
+                byte STOP   = (byte) 0x00;
+                byte SINGLE = (byte) 0x01;
+                byte LOOP   = (byte) 0x02;
+                BluetoothGattCharacteristic c;
+                c = mConnectedGatt.getService(service).getCharacteristic(C.TMP_DATA_CHAR);
+
+                if (msg[0] == STOP) {
+                    mConnectedGatt.setCharacteristicNotification(c, false);
+                    // 0x2902 org.bluetooth.descriptor.gatt.client_characteristic_configuration.xml
+                    UUID uuid = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
+                    BluetoothGattDescriptor descriptor = c.getDescriptor(uuid);
+                    descriptor.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
+                    mConnectedGatt.writeDescriptor(descriptor);
+                } else if (msg[0] == SINGLE) {
+                    mConnectedGatt.setCharacteristicNotification(c, true);
+                    // 0x2902 org.bluetooth.descriptor.gatt.client_characteristic_configuration.xml
+                    UUID uuid = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
+                    BluetoothGattDescriptor descriptor = c.getDescriptor(uuid);
+                    descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+                    mConnectedGatt.writeDescriptor(descriptor);
+                } else if (msg[0] == LOOP) {
+                    mConnectedGatt.setCharacteristicNotification(c, true);
+                    // 0x2902 org.bluetooth.descriptor.gatt.client_characteristic_configuration.xml
+                    UUID uuid = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
+                    BluetoothGattDescriptor descriptor = c.getDescriptor(uuid);
+                    descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+                    mConnectedGatt.writeDescriptor(descriptor);
+                }
             }
         }
 
@@ -324,11 +353,6 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
     };
 
     private void sendBLEMessage(UUID service, UUID characteristic, String action, byte[] msg) {
-        byte STOP   = (byte) 0x00;
-        byte SINGLE = (byte) 0x01;
-        byte LOOP   = (byte) 0x02;
-
-
         Log.i(C.LOGTAG, "SensorMgmtActivity - sendBLEMessage");
         BluetoothGattCharacteristic c;
         c = mConnectedGatt.getService(service).getCharacteristic(characteristic);
@@ -337,13 +361,6 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
         } else if (action.equals("write")){
             c.setValue(msg);
             mConnectedGatt.writeCharacteristic(c);
-            if (msg[0] == STOP) {
-                mConnectedGatt.setCharacteristicNotification(c, false);
-            } else if (msg[0] == SINGLE) {
-                mConnectedGatt.setCharacteristicNotification(c, true);
-            } else if (msg[0] == LOOP) {
-                mConnectedGatt.setCharacteristicNotification(c, true);
-            }
         }
     }
 
@@ -373,7 +390,7 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
                         return;
                     }
                     mMQ2Status.setText(characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 0).toString());
-                    getLatLong();
+                    //getLatLong();
                     saveData("MQ2", characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 0).toString(), "Int");
                     break;
                 case C.MSG_TMP:
@@ -387,7 +404,7 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
                     Double voltage = (v / 1024.0) * 5.0;
                     Double temperature = (voltage - .5) * 100;
                     mTemperatureStatus.setText(temperature.toString());
-                    getLatLong();
+                    //getLatLong();
                     saveData("TEMP", temperature.toString(), "Double");
                     break;
                 case C.MSG_CLEAR:
@@ -421,14 +438,21 @@ public class SensorMgmtActivity extends AppCompatActivity implements View.OnClic
 
         private void getLatLong(){
             LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-            Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-            double longitude = location.getLongitude();
-            double latitude  = location.getLatitude();
-            double altitude  = location.getAltitude();
+            if (lm != null) {
+                if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                        || checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    if (lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                        Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                        double longitude = location.getLongitude();
+                        double latitude  = location.getLatitude();
+                        double altitude  = location.getAltitude();
 
-            saveData("LAT", String.valueOf(latitude), "double");
-            saveData("LONG", String.valueOf(longitude), "double");
-            saveData("ALT", String.valueOf(altitude), "double");
+                        saveData("LAT", String.valueOf(latitude), "double");
+                        saveData("LONG", String.valueOf(longitude), "double");
+                        saveData("ALT", String.valueOf(altitude), "double");
+                    }
+                }
+            }
 
         }
     };
